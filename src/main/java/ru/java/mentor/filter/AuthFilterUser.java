@@ -9,7 +9,6 @@ import java.io.IOException;
 
 @WebFilter("/user")
 public class AuthFilterUser implements Filter {
-    private final static String login = "/login";
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -20,11 +19,13 @@ public class AuthFilterUser implements Filter {
         HttpServletRequest request = (HttpServletRequest)servletRequest;
         HttpServletResponse response = (HttpServletResponse)servletResponse;
         HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("user") == null) {
-            servletRequest.getServletContext().getRequestDispatcher(login).forward(request, response);
+
+        if (session != null && session.getAttribute("user") != null) {
+            chain.doFilter(request, response);
         }
 
-        chain.doFilter(request, response);
+        String path = request.getContextPath() + "/login";
+        response.sendRedirect(path);
     }
 
     @Override

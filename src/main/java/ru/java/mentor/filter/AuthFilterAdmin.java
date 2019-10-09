@@ -2,6 +2,7 @@ package ru.java.mentor.filter;
 
 import ru.java.mentor.model.User;
 import ru.java.mentor.model.UserRole;
+import ru.java.mentor.util.ExceptionFromReadMethod;
 
 import javax.servlet.*;
 import javax.servlet.annotation.WebFilter;
@@ -10,12 +11,11 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 
+import static ru.java.mentor.util.ReaderProperty.readProperty;
+
 @WebFilter("/admin")
 public class AuthFilterAdmin implements Filter {
-    private final String userPage = "WEB-INF/view/userPage.jsp";
-    private final String onlyAdmin = "Sorry, only Admin have enough rights";
     private final static UserRole adminRole = UserRole.Administrator;
-    private final static String login = "/login";
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -26,19 +26,23 @@ public class AuthFilterAdmin implements Filter {
         HttpServletRequest request = (HttpServletRequest)servletRequest;
         HttpServletResponse response = (HttpServletResponse)servletResponse;
         HttpSession session = request.getSession(false);
+        String path = request.getContextPath() + "/login";
 
-        if (session == null || session.getAttribute("user") == null) {
-            servletRequest.getServletContext().getRequestDispatcher(login).forward(request, response);
+        if (session != null && session.getAttribute("user") != null) {
+            User user = (User) session.getAttribute("user");
+
+            if (user.getRole().equals(adminRole)) {
+                chain.doFilter(request, response);
+            }
+
+            path = request.getContextPath() + "/user";
+            try {
+                session.setAttribute("message", readProperty("onlyAdmin"));
+            } catch (ExceptionFromReadMethod exceptionFromReadMethod) {
+                exceptionFromReadMethod.printStackTrace();
+            }
         }
-
-        User user = (User) session.getAttribute("user");
-
-        if (user.getRole().equals(adminRole)) {
-            chain.doFilter(request, response);
-        }
-        request.setAttribute("nameUser", user.getName());
-        request.setAttribute("message", onlyAdmin);
-        request.getRequestDispatcher(userPage).forward(request, response);
+        response.sendRedirect(path);
     }
 
     @Override

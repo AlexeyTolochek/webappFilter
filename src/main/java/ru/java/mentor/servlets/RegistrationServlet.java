@@ -2,6 +2,8 @@ package ru.java.mentor.servlets;
 
 import ru.java.mentor.model.User;
 import ru.java.mentor.service.UserService;
+import ru.java.mentor.util.ExceptionFromReadMethod;
+
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -10,17 +12,19 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.LocalDate;
 
+import static ru.java.mentor.util.ReaderProperty.readProperty;
+
 @WebServlet("/registration")
 public class RegistrationServlet extends HttpServlet {
-    private final String page = "/WEB-INF/view/registration.jsp";
-    private final String trueAdd = "Thanks 4reg";
-    private final String falseAdd = "login is already exist";
-    private final String invalidData = "Please enter correct data";
 
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("text/html");
-        request.getRequestDispatcher(page).forward(request, response);
+        try {
+            request.getRequestDispatcher(readProperty("pageReg")).forward(request, response);
+        } catch (ExceptionFromReadMethod exceptionFromReadMethod) {
+            exceptionFromReadMethod.printStackTrace();
+        }
     }
 
     @Override
@@ -31,22 +35,40 @@ public class RegistrationServlet extends HttpServlet {
         final String password = req.getParameter("password");
         final String address = req.getParameter("address");
         String birthdateStr = req.getParameter("birthdate");
-        LocalDate birthdate = LocalDate.parse (birthdateStr);
-        final String action = req.getParameter("action");
+        LocalDate birthdate = null;
+        try {
+            birthdate = LocalDate.parse(birthdateStr);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-        if (requestIsValid(name, login, password, address, birthdateStr)) {
+        if (requestIsValid(name, login, password, address, birthdateStr) && birthdate != null) {
             UserService service = UserService.getInstance();
+
+
             final User user = new User(name, login, password, address, birthdate);
 
             if (!service.isExistLogin(login)) {
                 service.addUser(user);
-                req.setAttribute("message", trueAdd);
+                try {
+                    req.setAttribute("message", readProperty("trueAdd"));
+                } catch (ExceptionFromReadMethod exceptionFromReadMethod) {
+                    exceptionFromReadMethod.printStackTrace();
+                }
             } else {
-                req.setAttribute("message", falseAdd);
+                try {
+                    req.setAttribute("message", readProperty("falseAdd"));
+                } catch (ExceptionFromReadMethod exceptionFromReadMethod) {
+                    exceptionFromReadMethod.printStackTrace();
+                }
             }
 
         } else {
-            req.setAttribute("message", invalidData);
+            try {
+                req.setAttribute("message", readProperty("invalidData"));
+            } catch (ExceptionFromReadMethod exceptionFromReadMethod) {
+                exceptionFromReadMethod.printStackTrace();
+            }
         }
         doGet(req, resp);
     }

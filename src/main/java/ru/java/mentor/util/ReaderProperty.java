@@ -14,7 +14,6 @@ public class ReaderProperty {
             InputStream stream = ReaderProperty.class.getClassLoader().getResourceAsStream(pathToConfigurationFile);
             properties.load(stream);
             value = properties.getProperty(key);
-            System.out.println("// " + value + " / " + key);
         } catch (IOException e) {
             throw new ExceptionFromReadMethod("can`t find file " + pathToConfigurationFile);
         }

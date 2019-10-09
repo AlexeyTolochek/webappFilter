@@ -2,6 +2,7 @@ package ru.java.mentor.servlets;
 
 import ru.java.mentor.model.User;
 import ru.java.mentor.service.UserService;
+import ru.java.mentor.util.ExceptionFromReadMethod;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -11,18 +12,19 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 
+import static ru.java.mentor.util.ReaderProperty.readProperty;
 
 @WebServlet("/")
 public class MainServlet extends HttpServlet {
-    private final String page = "WEB-INF/view/index.jsp";
-    private final String invalidData = "Please enter correct data";
-
 
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("text/html");
-        request.getRequestDispatcher(page).forward(request, response);
-
+        try {
+            request.getRequestDispatcher(readProperty("page")).forward(request, response);
+        } catch (ExceptionFromReadMethod exceptionFromReadMethod) {
+            exceptionFromReadMethod.printStackTrace();
+        }
     }
 
     @Override
@@ -36,17 +38,26 @@ public class MainServlet extends HttpServlet {
             if (service.validateUser(login, password)) {
                 User user = service.getUserByLogin(login);
                 resp.setContentType("text/html");
-
-                // req.setAttribute("nameUser", user.getName());
-                //req.setAttribute("birthdateUser", user.getbirthdate());
-
                 HttpSession session = req.getSession();
                 session.setMaxInactiveInterval(1800);
                 session.setAttribute("user", user);
-                req.getServletContext().getRequestDispatcher("/user").forward(req, resp);
+                session.setAttribute("message", "");
+                String path = req.getContextPath() + "/user";
+                resp.sendRedirect(path);
+            } else {
+                try {
+                    req.setAttribute("message", readProperty("invalidPass"));
+                } catch (ExceptionFromReadMethod exceptionFromReadMethod) {
+                    exceptionFromReadMethod.printStackTrace();
+                }
+                doGet(req, resp);
             }
         } else {
-            req.setAttribute("message", invalidData);
+            try {
+                req.setAttribute("message", readProperty("invalidData"));
+            } catch (ExceptionFromReadMethod exceptionFromReadMethod) {
+                exceptionFromReadMethod.printStackTrace();
+            }
             doGet(req, resp);
         }
     }

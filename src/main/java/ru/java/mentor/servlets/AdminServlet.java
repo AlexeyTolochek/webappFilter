@@ -2,6 +2,7 @@ package ru.java.mentor.servlets;
 
 import ru.java.mentor.model.User;
 import ru.java.mentor.service.UserService;
+import ru.java.mentor.util.ExceptionFromReadMethod;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -12,10 +13,10 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 
+import static ru.java.mentor.util.ReaderProperty.readProperty;
+
 @WebServlet("/admin")
 public class AdminServlet extends HttpServlet {
-    private final String page = "/WEB-INF/view/admin.jsp";
-
 
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -33,6 +34,7 @@ public class AdminServlet extends HttpServlet {
                 service.deleteUser(user);
             }
         }
+
         if (edit != null) {
             id = Long.parseLong(idStr);
             User user = service.getUserById(id);
@@ -40,9 +42,12 @@ public class AdminServlet extends HttpServlet {
         }
 
         List<User> list = service.getAllUsers();
-
         request.setAttribute("list", list);
-        request.getServletContext().getRequestDispatcher(page).forward(request, response);
+        try {
+            request.getServletContext().getRequestDispatcher(readProperty("pageAdmin")).forward(request, response);
+        } catch (ExceptionFromReadMethod exceptionFromReadMethod) {
+            exceptionFromReadMethod.printStackTrace();
+        }
     }
 
     @Override
